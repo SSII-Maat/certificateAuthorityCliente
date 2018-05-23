@@ -136,7 +136,7 @@ function generateCSR() {
             {
                 type: "input",
                 name: "csrPath",
-                message: "Camino donde guardar la clave"
+                message: "Camino donde guardar la petición de certificado"
             },
             {
                 type: "list",
@@ -336,7 +336,7 @@ function sendCSR() {
                         message: "Se ha abierto el CSR correctamente"
                     });
                     var socket = new Socket();
-                    var state = 1; // 0 - Se envía el CSR, 1 - Se recibe certificado del CA, 2 - Recibido el certificado del cliente
+                    var state = 0; // 0 - Se envía el CSR, 1 - Se recibe certificado del CA, 2 - Recibido el certificado del cliente
                     socket.connect(answers.remotePort, answers.remoteAddress, (err) => {
                         if(err) {
                             error("\x1b[31;1mSe ha producido un error al intentar conectar con la CA\x1b[0m")
@@ -352,6 +352,7 @@ function sendCSR() {
                                     error("\x1b[31;1mSe ha producido un error al comprobar la validez del certificado de la CA\x1b[0m")
                                 } else {
                                     socket.write(Buffer.from("200"));
+                                    state++;
                                 }
                             });
                         } else if(state == 2) {
@@ -365,6 +366,7 @@ function sendCSR() {
                                             error("\x1b[31;1mSe ha producido un error cuando se ha intentado guardar el certificado\x1b[0m")
                                         } else {
                                             result(certificate);
+                                            socket.end();
                                         }
                                     })
                                 });
@@ -374,6 +376,7 @@ function sendCSR() {
                     socket.on('close', (err) => {
                         if(state != 2) {
                             error("\x1b[31;1mSe ha producido un error en la transmisión con el servidor, conexión cerrada inesperadamente\x1b[0m")
+                            socket.end();
                         }
                     })
                 }
